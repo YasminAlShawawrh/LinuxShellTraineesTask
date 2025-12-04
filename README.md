@@ -7,94 +7,94 @@ All commands were executed and verified on a Linux system (RHEL/CentOS-based dis
 Part 1 — LVM
 Steps include disk partitioning, PV creation, VG setup with 16M PE, LV creation, filesystem mounting, and fstab configuration.
 Key commands:
-fdisk /dev/sdb
-pvcreate /dev/sdb1
-vgcreate -s 16M vgdata /dev/sdb1
-lvcreate -n lv -l 100%VG vgdata
-mkdir /mnt/data
-mount /dev/vgdata/lv /mnt/data
-vim /etc/fstab
+- fdisk /dev/sdb
+- pvcreate /dev/sdb1
+- vgcreate -s 16M vgdata /dev/sdb1
+- lvcreate -n lv -l 100%VG vgdata
+- mkdir /mnt/data
+- mount /dev/vgdata/lv /mnt/data
+- vim /etc/fstab
 
 Part 2 — Users, Groups, and Permissions
 Created multiple users, groups, assigned admin access, configured sudo privileges, and verified login restrictions.
 Key commands:
-useradd -u 601 -s /sbin/nologin user1
-groupadd TrainingGroup
-usermod -aG TrainingGroup user1
-groupadd admin
-useradd -G admin user2
-useradd -G admin user3
-passwd user2 / user3
-usermod -aG wheel user3
-sudo whoami
+- useradd -u 601 -s /sbin/nologin user1
+- groupadd TrainingGroup
+- usermod -aG TrainingGroup user1
+- groupadd admin
+- useradd -G admin user2
+- useradd -G admin user3
+- passwd user2 / user3
+- usermod -aG wheel user3
+- sudo whoami
 
 Part 3 — SSH
 Configured SSH key-based authentication for user3 to a remote server.
 Key commands:
-ssh-keygen -t rsa -b 4096
-ssh-copy-id ldap@ipaserver.example.com
-ssh ldap@ipaserver.example.com
+- ssh-keygen -t rsa -b 4096
+- ssh-copy-id ldap@ipaserver.example.com
+- ssh ldap@ipaserver.example.com
 
 Part 4 — File Permissions
 Created file, assigned ownership to user1 and restricted access.
 Commands:
-cp /etc/fstab /var/tmp/admin
-chown user1:user1 /var/tmp/admin
-chmod 700 /var/tmp/admin
+- cp /etc/fstab /var/tmp/admin
+- chown user1:user1 /var/tmp/admin
+- chmod 700 /var/tmp/admin
 
 Part 5 — SELinux
 Enabled and enforced SELinux permanently.
 Commands:
-sestatus
-setenforce 1
-vim /etc/selinux/config   # Set SELINUX=enforcing
-sestatus
+- sestatus
+- setenforce 1
+- vim /etc/selinux/config   # Set SELINUX=enforcing
+- sestatus
 
 Part 6 — Bash Script & Process Management
 Created a monitoring script (monitor_process.sh) that manages a 10-minute background process, kills it if needed, and logs the status periodically.
 Tasks:
-Run background process (sleep 600 &)
-Monitor via loop
-Kill if still running
-Script runs for exactly 600 seconds
+- Run background process (sleep 600 &)
+- Monitor via loop
+- Kill if still running
+- Script runs for exactly 600 seconds
 
 Part 7 — Yum Repository
 Installed packages, created a local Zabbix repository, disabled external repos, and installed Zabbix components from the local repo.
 Commands:
-dnf install tmux httpd mariadb-server -y
-systemctl enable --now httpd
-createrepo /var/www/html/zabbix
-dnf config-manager --disable \*
-dnf config-manager --enable local-zabbix
-dnf install zabbix-server-mysql zabbix-web-mysql zabbix-agent --nogpgcheck -y
-systemctl enable --now zabbix-server
+- dnf install tmux httpd mariadb-server -y
+- systemctl enable --now httpd
+- createrepo /var/www/html/zabbix
+- dnf config-manager --disable \*
+- dnf config-manager --enable local-zabbix
+- dnf install zabbix-server-mysql zabbix-web-mysql zabbix-agent --nogpgcheck -y
+- systemctl enable --now zabbix-server
 
 Part 8 — Network Management
 Managed firewall rules, opened HTTP/HTTPS ports, and blocked SSH for a specific IP.
 Commands:
-firewall-cmd --permanent --add-service=http
-firewall-cmd --permanent --add-service=https
-firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.1.100" port protocol="tcp" port="22" reject'
-firewall-cmd --reload
+- firewall-cmd --permanent --add-service=http
+- firewall-cmd --permanent --add-service=https
+- firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.1.100" port protocol="tcp" port="22" reject'
+- firewall-cmd --reload
 
 Part 9 — Cron Job
 Created a script to log currently logged-in users and scheduled it via cron.
 Steps:
-vim /usr/local/bin/log_users.sh
-chmod 0755 /usr/local/bin/log_users.sh
-touch /var/log/logged_users.log
-chmod 0644 /var/log/logged_users.log
-crontab -e   # 30 1 * * * /usr/local/bin/log_users.sh
+- vim /usr/local/bin/log_users.sh
+- chmod 0755 /usr/local/bin/log_users.sh
+- touch /var/log/logged_users.log
+- chmod 0644 /var/log/logged_users.log
+- crontab -e   # 30 1 * * * /usr/local/bin/log_users.sh
 
 Part 10 — MariaDB
 Installed MariaDB, created database/tables, inserted 10 records, configured a database user, and tested connections.
 Commands:
-CREATE DATABASE studentdb;
-CREATE USER 'studentuser'@'%' IDENTIFIED BY 'password';
-GRANT ALL PRIVILEGES ON studentdb.* TO 'studentuser'@'%';
-CREATE TABLE students (...);
-INSERT INTO students ...;
-mysql -u studentuser -p -h 127.0.0.1 studentdb
+- CREATE DATABASE studentdb;
+- CREATE USER 'studentuser'@'%' IDENTIFIED BY 'password';
+- GRANT ALL PRIVILEGES ON studentdb.* TO 'studentuser'@'%';
+- CREATE TABLE students (...);
+- INSERT INTO students ...;
+- mysql -u studentuser -p -h 127.0.0.1 studentdb
 
 Part 11 — Web Page for System Statistics
 Implemented a system statistics dashboard in /var/www/html/sysstats/ generated by cron-scheduled scripts.
@@ -102,14 +102,14 @@ Data collected:
 CPU usage
 Memory usage
 Disk usage
-mkdir -p /var/www/html/sysstats/{cpu,memory,disk}
-chown -R apache:apache /var/www/html/sysstats
-chmod -R 755 /var/www/html/sysstats
-vim /root/collect_stats.sh
-vim /root/calculate_avg.sh
-crontab -e
-* * * * * /root/collect_stats.sh
-0 * * * * /root/calculate_avg.sh
+- mkdir -p /var/www/html/sysstats/{cpu,memory,disk}
+- chown -R apache:apache /var/www/html/sysstats
+- chmod -R 755 /var/www/html/sysstats
+- vim /root/collect_stats.sh
+- vim /root/calculate_avg.sh
+- crontab -e
+- * * * * * /root/collect_stats.sh
+- 0 * * * * /root/calculate_avg.sh
 Testing:
 curl http://localhost/sysstats/
 curl http://localhost/sysstats/cpu.html

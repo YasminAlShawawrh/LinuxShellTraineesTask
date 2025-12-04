@@ -110,11 +110,12 @@ Disk usage
 - crontab -e
 - * * * * * /root/collect_stats.sh
 - 0 * * * * /root/calculate_avg.sh
+  
 Testing:
-curl http://localhost/sysstats/
-curl http://localhost/sysstats/cpu.html
-curl http://localhost/sysstats/disk.html
-curl http://localhost/sysstats/memory.html
+- curl http://localhost/sysstats/
+- curl http://localhost/sysstats/cpu.html
+- curl http://localhost/sysstats/disk.html
+- curl http://localhost/sysstats/memory.html
 
 
 

@@ -1,0 +1,19 @@
+# part2: Users, Groups, and Permissions
+1- Add user: user1, set uid=601 Password: redhat. The user's login shell should be
+non-interactive. (no ssh access to server)
+2- Add user1 to group TrainingGroup.
+3- Add users: user2, user3. The Additional group of the two users: user2, user3 is the admin
+group Password: redhat, user 3 with root permissions
+
+useradd -u 601 -s /sbin/nologin user1 2>/dev/null	# Create user1 with UID 601 and a non-interactive shell (cannot log in via SSH); redirect warning to /dev/null
+groupadd TrainingGroup				                  	# Create a new group named TrainingGroup
+usermod -aG TrainingGroup user1				      # Add user1 to the TrainingGroup without removing any existing groups
+groupadd admin						# Create a new group named admin for administrative privileges
+useradd -G admin user2					# Create user2 and add it to the admin group
+useradd -G admin user3					# Create user3 and add it to the admin group
+passwd user2						# Set the password for user2 (you will type 'redhat')
+passwd user3						# Set the password for user3 (you will type 'redhat')
+usermod -aG wheel user3					# Add user3 to the wheel group to give root/sudo privileges
+su - user						# Switch to a different user (replace 'user' with the target username to verify)
+sudo whoami						# Test sudo privileges; should return 'root' if the user has root access
+

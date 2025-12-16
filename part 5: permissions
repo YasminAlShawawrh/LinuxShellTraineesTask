@@ -1,1 +1,13 @@
 
+# part 5: permissions
+SELinux must be running in the Enforcing mode (permanent even after reboot).
+
+sestatus/getenforce              # Check current SELinux status and mode
+setenforce 1                     # Set SELinux to enforcing mode temporarily (runtime)
+vim /etc/selinux/config          # Edit SELinux config file to make enforcing permanent Change SELINUX=permissive to SELINUX=enforcing and save the file
+sestatus/getenforce              # Verify that SELinux is now enforcing permanently
+
+notes:
+Security-Enhanced Linux: SELinux is a mandatory access control system that adds an extra layer of security to Linux. Enforcing blocks access, Permissive logs only, Disabled turns SELinux off.
+
+

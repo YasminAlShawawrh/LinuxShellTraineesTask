@@ -1,1 +1,12 @@
+# part 3: SSH
+Generate SSH key and connect to different VM without password.
+
+su - user3                    		 # Switch to user3 on the System VM
+ssh-keygen -t rsa -b 4096    		 # Generate a new SSH key pair for passwordless login
+ssh-copy-id ldap@ipaserver.example.com   # Copy the public key to the remote VM
+ssh ldap@ipaserver.example.com           # Test passwordless SSH login
+
+notes:
+( Secure Shell ) It is a secure way to connect to another Linux server remotely.
+
 

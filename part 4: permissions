@@ -1,1 +1,12 @@
+# part 4: permissions
+Copy /etc/fstab to /var/tmp name admin, the user1 could read, write and modify it, while user2 can’t do
+any permission.
+
+cp /etc/fstab /var/tmp/admin 	   # Copy /etc/fstab to /var/tmp/admin
+chown user1:user1 /var/tmp/admin   # Make user1 the owner of the file
+chmod 700 /var/tmp/admin	   # Owner can read, write, execute; others have no access
+ls -l /var/tmp/admin  		   # Check that user1 has full access and others have none
+
+notes:
+(File System Table)  defines how and where filesystems are mounted automatically at boot
 

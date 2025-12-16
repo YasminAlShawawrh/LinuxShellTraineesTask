@@ -54,4 +54,4 @@ To allow remote or local clients to connect to MariaDB/MySQL database.
 To ensure the user can perform only allowed operations on the database.
 % allows the user to connect from any host.
 connect to the database created in step 3 using the new user (with password): Connecting with the new user verifies that the account works, has the correct permissions, and can access and modify the database as intended.
-
+GRANT is used to allow the new user to actually use the database. Without it, the user exists but can’t read, write, or modify any data.

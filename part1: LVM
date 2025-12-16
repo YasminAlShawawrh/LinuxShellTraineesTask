@@ -9,7 +9,7 @@ pvcreate /dev/sdb1               	# Initialize the partition as a Physical Volum
 pvs			                          # List all physical volumes
 vgcreate -s 16M vgdata /dev/sdb1	# Create a Volume Group (VG) with 16M PE
 vgdisplay vgdata		             	# Display details of the Volume Group
-lvcreate -n lv -l 100%VG vgdata  	# Create a Logical Volume (LV) using all VG space
+lvcreate -n lv -l 50 vgdata  	# Create a Logical Volume (LV) using VG space
 lvs                    		        # List all logical volumes
 blkid /dev/vgdata/lv  		        # Show UUID and filesystem info of the LV
 mkdir /mnt/data         	        # Create a mount point for the LV
@@ -18,3 +18,9 @@ mount -a                                # Mount all filesystems in /etc/fstab
 mount | grep /mnt/data                  # Verify that /mnt/data is mounted
 vim /etc/fstab                          # Edit fstab to mount the LV automatically at boot
 
+notes:
+(Logical Volume Manager): LVM allows flexible disk management by abstracting physical storage into logical volumes that can be resized dynamically.
+mkfs creates a filesystem so the operating system can store and manage files.
+Mount attaches a filesystem to the Linux directory tree so it becomes accessible.
+mount alone → temporary, runtime only
+/etc/fstab → persistent, survives reboots

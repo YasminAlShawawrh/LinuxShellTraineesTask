@@ -1,1 +1,18 @@
+# part 8: Network management
+1- Open port 443 , 80
+2- Make the changes permanent
+3- Block ssh connection for your colleague ip to the VM.
+
+firewall-cmd --permanent --add-service=http      # Open HTTP port (80) permanently
+firewall-cmd --permanent --add-service=https     # Open HTTPS port (443) permanently
+firewall-cmd --reload                            # Reload firewall to apply the new rules
+firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.1.100" port protocol="tcp" port="22" reject' Block SSH (port 22) permanently for colleague IP 192.168.1.100
+firewall-cmd --reload                            # Reload firewall to apply the SSH block
+firewall-cmd --list-all                          # List all firewall rules to verify the configuration
+
+notes:
+Port 80: HTTP (HyperText Transfer Protocol). Used for normal, unencrypted web traffic. Port 443: HTTPS (HTTP Secure). Used for secure, encrypted web traffic. Opening them allows users to access websites hosted on the server.
+A firewall is a security system that controls and filters network traffic to protect servers and networks.
+Block ssh connection for your colleague ip to the VM. To prevent unauthorized or restricted users from accessing the server via SSH.
+
 

@@ -1,1 +1,57 @@
+# part 10: MariaDB
+1- install mariadb from the local repo that was created earlier.
+2- open ports in iptables from mariadb.
+3- create database , user(note: handle permissions).
+4- connect to the database created in step 3 using the new user (with password)
+Example schema :
+Create a MariaDB database called studentdb on rhce1 and add ten records each containing “student
+firstname” (Allen, David, Mary, Dennis, Joseph, Dennis, Ritchie, Robert, David, and Mary), “student
+lastname” (Brown,Brown, Green, Green, Black, Black, Salt, Salt, Suzuki, and Chen), program enrolled in (3 x
+mechanical, 3 x electrical,and 4 x computer science), expected graduation year (2 x 2017, 3 x 2018, 5 x
+2020), and a student number (110-001 to 110-010)
+
+dnf install mariadb-server -y       		# Install MariaDB server package
+systemctl enable --now mariadb     	        # Enable and start MariaDB service
+firewall-cmd --permanent --add-service=mysql    # Allow MySQL/MariaDB service through firewall
+firewall-cmd --reload                           # Apply firewall changes
+mysql -u root -p				# Login as root to MariaDB
+# Inside MariaDB prompt:
+CREATE DATABASE studentdb;                             		# Create database studentdb
+DROP USER IF EXISTS 'studentuser'@'%';                  	# Remove existing user if exists
+CREATE USER 'studentuser'@'%' IDENTIFIED BY 'password'; 	# Create new user accessible from any host
+GRANT ALL PRIVILEGES ON studentdb.* TO 'studentuser'@'%'; 	# Grant full privileges on studentdb
+FLUSH PRIVILEGES;                                    	        # Reload privileges to apply changes
+# Create the students table
+USE studentdb;                                  
+CREATE TABLE students (
+    student_number VARCHAR(10) PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    program_enrolled VARCHAR(50),
+    graduation_year INT
+);                                                   
+# Insert records into students table
+INSERT INTO students (student_number, first_name, last_name, program_enrolled, graduation_year) VALUES
+('110-001', 'Allen', 'Brown', 'Mechanical', 2017),
+('110-002', 'David', 'Brown', 'Mechanical', 2017),
+('110-003', 'Mary', 'Green', 'Mechanical', 2018),
+('110-004', 'Dennis', 'Green', 'Electrical', 2018),
+('110-005', 'Joseph', 'Black', 'Electrical', 2018),
+('110-006', 'Dennis', 'Black', 'Electrical', 2020),
+('110-007', 'Ritchie', 'Salt', 'Computer Science', 2020),
+('110-008', 'Robert', 'Salt', 'Computer Science', 2020),
+('110-009', 'David', 'Suzuki', 'Computer Science', 2020),
+('110-010', 'Mary', 'Chen', 'Computer Science', 2020);  	# Add 10 sample student records
+SELECT * FROM students;                             		# Verify the inserted records
+EXIT;                                           	        # Exit MariaDB prompt
+
+mysql -u studentuser -p -h 127.0.0.1 studentdb      		# Connect to studentdb as studentuser
+
+notes:
+Allow inbound connections to port 3306/tcp in the firewall on the server where MariaDB is running.
+This can be done using either firewall or iptables.
+To allow remote or local clients to connect to MariaDB/MySQL database.
+To ensure the user can perform only allowed operations on the database.
+% allows the user to connect from any host.
+connect to the database created in step 3 using the new user (with password): Connecting with the new user verifies that the account works, has the correct permissions, and can access and modify the database as intended.
 

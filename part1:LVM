@@ -1,0 +1,20 @@
+# part1: LVM
+Create a volume group, and set 16M as extends. And divided a volume group containing 50 extends on
+volume group lv, make it as ext4 file system, and mounted automatically under /mnt/data. Please
+note that this should be implemented on the second disk 
+
+fdisk /dev/sdb			            	# Partition the second disk for LVM
+lsblk				                    	# Show disks and partitions to verify changes
+pvcreate /dev/sdb1               	# Initialize the partition as a Physical Volume (PV)
+pvs			                          # List all physical volumes
+vgcreate -s 16M vgdata /dev/sdb1	# Create a Volume Group (VG) with 16M PE
+vgdisplay vgdata		             	# Display details of the Volume Group
+lvcreate -n lv -l 100%VG vgdata  	# Create a Logical Volume (LV) using all VG space
+lvs                    		        # List all logical volumes
+blkid /dev/vgdata/lv  		        # Show UUID and filesystem info of the LV
+mkdir /mnt/data         	        # Create a mount point for the LV
+mount /dev/vgdata/lv /mnt/data          # Mount the LV at /mnt/data
+mount -a                                # Mount all filesystems in /etc/fstab
+mount | grep /mnt/data                  # Verify that /mnt/data is mounted
+vim /etc/fstab                          # Edit fstab to mount the LV automatically at boot
+

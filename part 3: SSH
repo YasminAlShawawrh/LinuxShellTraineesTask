@@ -8,5 +8,9 @@ ssh ldap@ipaserver.example.com           # Test passwordless SSH login
 
 notes:
 ( Secure Shell ) It is a secure way to connect to another Linux server remotely.
+This creates two keys:
+id_rsa → your private key (keep this secret)
+id_rsa.pub → your public key (can be shared)
+Key length: 4096 bits (very strong).
 
 

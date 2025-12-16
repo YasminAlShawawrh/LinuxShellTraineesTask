@@ -1,1 +1,206 @@
+Implement a web page to show system statistics to the user
 
+mkdir -p /var/www/html/sysstats/cpu            # CPU stats directory
+mkdir -p /var/www/html/sysstats/memory         # Memory stats directory
+mkdir -p /var/www/html/sysstats/disk           # Disk stats directory
+chown -R apache:apache /var/www/html/sysstats  # Change owner to apache
+chmod -R 755 /var/www/html/sysstats            # Read/write/execute for owner, read/execute for group/others
+vim /root/collect_stats.sh                     # Open the script to write CPU, memory, disk stats
+##############################################################################################################
+#!/bin/bash
+STATS_DIR="/var/www/html/sysstats"
+TIMESTAMP=$(date +"%Y%m%d%H%M")
+
+# CPU usage
+CPU=$(grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$4+$5); printf "%.1f", usage}')
+echo $CPU > $STATS_DIR/cpu/cpu_$TIMESTAMP.txt
+
+# Memory usage
+MEM_USED=$(free -m | awk '/Mem:/ {print $3}')
+MEM_FREE=$(free -m | awk '/Mem:/ {print $4}')
+echo "$MEM_USED $MEM_FREE" > $STATS_DIR/memory/memory_$TIMESTAMP.txt
+
+# Disk usage
+DISK_USED=$(df -m / | awk 'NR==2 {print $3}')
+DISK_FREE=$(df -m / | awk 'NR==2 {print $4}')
+echo "$DISK_USED $DISK_FREE" > $STATS_DIR/disk/disk_$TIMESTAMP.txt
+
+# --- Optional: regenerate HTML files ---
+/root/calculate_avg.sh
+##############################################################################################################
+chmod +x /root/collect_stats.sh                # Add execute permission
+crontab -e                                     # Edit cron jobs
+* * * * * /root/collect_stats.sh 	            # Run collect script every minute (for testing)
+0 * * * * /root/collect_stats.sh               # Run collect script at minute 0 of every hour
+vim /root/calculate_avg.sh                     # Script calculates averages and generates HTML pages
+##############################################################################################################
+#!/bin/bash
+
+STATS_DIR="/var/www/html/sysstats"
+TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+
+# ---------------- CPU ----------------
+CPU_FILES=($STATS_DIR/cpu/cpu_*.txt)
+CPU_SUM=0
+CPU_COUNT=0
+for f in "${CPU_FILES[@]}"; do
+    val=$(cat "$f")
+    # Make sure it's a number
+    if [[ $val =~ ^[0-9.]+$ ]]; then
+        CPU_SUM=$(echo "$CPU_SUM + $val" | bc)
+        CPU_COUNT=$((CPU_COUNT + 1))
+    fi
+done
+if [ $CPU_COUNT -gt 0 ]; then
+    CPU_AVG=$(echo "scale=2; $CPU_SUM / $CPU_COUNT" | bc)
+else
+    CPU_AVG=0
+fi
+echo "$CPU_AVG" > $STATS_DIR/cpu/avg_cpu.txt
+
+# ---------------- Memory ----------------
+MEM_FILES=($STATS_DIR/memory/memory_*.txt)
+MEM_USED_SUM=0
+MEM_FREE_SUM=0
+MEM_COUNT=0
+for f in "${MEM_FILES[@]}"; do
+    read used free < "$f"
+    # Make sure both are numbers
+    if [[ $used =~ ^[0-9]+$ && $free =~ ^[0-9]+$ ]]; then
+        MEM_USED_SUM=$((MEM_USED_SUM + used))
+        MEM_FREE_SUM=$((MEM_FREE_SUM + free))
+        MEM_COUNT=$((MEM_COUNT+1))
+    fi
+done
+if [ $MEM_COUNT -gt 0 ]; then
+    MEM_USED_AVG=$(echo "scale=2; $MEM_USED_SUM / $MEM_COUNT" | bc)
+    MEM_FREE_AVG=$(echo "scale=2; $MEM_FREE_SUM / $MEM_COUNT" | bc)
+else
+    MEM_USED_AVG=0
+    MEM_FREE_AVG=0
+fi
+echo "$MEM_USED_AVG $MEM_FREE_AVG" > $STATS_DIR/memory/avg_memory.txt
+
+# ---------------- Disk ----------------
+DISK_FILES=($STATS_DIR/disk/disk_*.txt)
+DISK_USED_SUM=0
+DISK_FREE_SUM=0
+DISK_COUNT=0
+for f in "${DISK_FILES[@]}"; do
+    read used free < "$f"
+    if [[ $used =~ ^[0-9]+$ && $free =~ ^[0-9]+$ ]]; then
+        DISK_USED_SUM=$((DISK_USED_SUM + used))
+        DISK_FREE_SUM=$((DISK_FREE_SUM + free))
+        DISK_COUNT=$((DISK_COUNT+1))
+    fi
+done
+if [ $DISK_COUNT -gt 0 ]; then
+    DISK_USED_AVG=$(echo "scale=2; $DISK_USED_SUM / $DISK_COUNT" | bc)
+    DISK_FREE_AVG=$(echo "scale=2; $DISK_FREE_SUM / $DISK_COUNT" | bc)
+else
+    DISK_USED_AVG=0
+    DISK_FREE_AVG=0
+fi
+echo "$DISK_USED_AVG $DISK_FREE_AVG" > $STATS_DIR/disk/avg_disk.txt
+# ---------------- Generate HTML pages ----------------
+
+# Main index.html
+cat > $STATS_DIR/index.html <<EOL
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>System Statistics</title>
+<style>
+body { font-family: Arial, sans-serif; max-width:900px; margin:2rem auto; padding:0 1rem; }
+h1 { color:#222; }
+ul { list-style: none; padding:0;}
+li { margin: 0.5rem 0; }
+a { text-decoration: none; color: #0066cc; }
+.meta { color: #666; font-size: 0.9rem;}
+</style>
+</head>
+<body>
+<h1>System Statistics</h1>
+<p class="meta">Last updated: $TIMESTAMP</p>
+<ul>
+<li><a href="cpu.html">CPU Usage</a> — avg: $CPU_AVG% (samples: $CPU_COUNT)</li>
+<li><a href="mem.html">Memory Usage</a> — avg used: $MEM_USED_AVG MB, avg free: $MEM_FREE_AVG MB (samples: $MEM_COUNT)</li>
+<li><a href="disk.html">Disk Usage</a> — avg used: $DISK_USED_AVG MB, avg free: $DISK_FREE_AVG MB (samples: $DISK_COUNT)</li>
+</ul>
+</body>
+</html>
+EOL
+
+# CPU page
+cat > $STATS_DIR/cpu.html <<EOL
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CPU Usage</title>
+</head>
+<body>
+<h1>CPU Usage</h1>
+<p>Average: $CPU_AVG%</p>
+<ul>
+EOL
+for f in "${CPU_FILES[@]}"; do
+    ts=$(basename "$f" | sed 's/cpu_//; s/.txt//')
+    val=$(cat "$f")
+    echo "<li>$ts — $val%</li>" >> $STATS_DIR/cpu.html
+done
+echo "</ul></body></html>" >> $STATS_DIR/cpu.html
+
+# Memory page
+cat > $STATS_DIR/mem.html <<EOL
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Memory Usage</title>
+</head>
+<body>
+<h1>Memory Usage</h1>
+<p>Average Used: $MEM_USED_AVG MB, Average Free: $MEM_FREE_AVG MB</p>
+<ul>
+EOL
+for f in "${MEM_FILES[@]}"; do
+    ts=$(basename "$f" | sed 's/memory_//; s/.txt//')
+    read used free < "$f"
+    echo "<li>$ts — Used: $used MB, Free: $free MB</li>" >> $STATS_DIR/mem.html
+done
+echo "</ul></body></html>" >> $STATS_DIR/mem.html
+
+# Disk page
+cat > $STATS_DIR/disk.html <<EOL
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Disk Usage</title>
+</head>
+<body>
+<h1>Disk Usage</h1>
+<p>Average Used: $DISK_USED_AVG MB, Average Free: $DISK_FREE_AVG MB</p>
+<ul>
+EOL
+for f in "${DISK_FILES[@]}"; do
+    ts=$(basename "$f" | sed 's/disk_//; s/.txt//')
+    read used free < "$f"
+    echo "<li>$ts — Used: $used MB, Free: $free MB</li>" >> $STATS_DIR/disk.html
+done
+echo "</ul></body></html>" >> $STATS_DIR/disk.html
+##############################################################################################################
+chmod +x /root/calculate_avg.sh                # Add execute permission
+yum install httpd -y  		       	       # Install httpd package
+systemctl start httpd  			       # Start Apache immediately
+systemctl enable httpd			       # Enable Apache to start automatically at boot
+# Test if the web page is working locally
+curl http://localhost/sysstats/  # Test index.html page
+curl http://localhost/sysstats/disk.html  # Test disk stats page
+curl http://localhost/sysstats/cpu.html  # Test CPU stats page
+curl http://localhost/sysstats/memory.html  # Test memory stats page
+
+# Access the web page from browser using port forwarding in VirtualBox
+http://localhost:8080/sysstats/index.html  # Open in browser (host machine) via forwarded port

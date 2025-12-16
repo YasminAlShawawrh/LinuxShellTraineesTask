@@ -1,1 +1,32 @@
+# part 7: Yum Repo
+1- Install tmux on your machine
+2- Install apache server on your machine(httpd) and Install mysql.
+3- Create a local yum repository on your local machine(available publicly) with the zabbix rpms:
+https://repo.zabbix.com/zabbix/4.4/rhel/7/x86_64/
+4- Disable all other repositories and keep only the new repo
+5- Install zabbix rpms from the new repo (Download zabbix, zabbix-web,php, zabbix-server,
+zabbix-agent rpm’s and their dependencies)
+
+dnf install tmux -y                         # Install tmux on the system
+dnf install httpd -y                        # Install Apache HTTP server
+dnf install mariadb-server -y               # Install MariaDB server
+systemctl enable --now httpd                # Enable and start Apache
+systemctl enable --now mariadb              # Enable and start MariaDB
+mkdir -p /var/www/html/zabbix               # Create directory to host Zabbix RPMs
+cd /var/www/html/zabbix
+createrepo /var/www/html/zabbix  	    # Initialize repository metadata for the copied RPMs
+[local-zabbix]
+name=Local Zabbix Repository
+baseurl=http://localhost/zabbix/
+enabled=1
+gpgcheck=0                                
+dnf config-manager --disable \*             # Disable all repos
+dnf config-manager --enable local-zabbix    # Enable only the local Zabbix repo
+dnf install zabbix-server-mysql zabbix-web-mysql zabbix-agent --nogpgcheck -y # Install Zabbix server, web frontend, and agent from local repo
+
+notes:
+tmux is a terminal multiplexer: run multiple terminal sessions in one window. Can detach and reattach sessions. Useful for long-running tasks like installing packages or building a repo.
+httpd (Apache) → will host  local repo (Zabbix RPMs) via HTTP.
+MariaDB → database server (needed for Zabbix later).
+
 

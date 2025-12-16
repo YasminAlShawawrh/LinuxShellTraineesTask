@@ -17,3 +17,6 @@ usermod -aG wheel user3					# Add user3 to the wheel group to give root/sudo pri
 su - user						# Switch to a different user (replace 'user' with the target username to verify)
 sudo whoami						# Test sudo privileges; should return 'root' if the user has root access
 
+notes:
+wheel is a special system group that allows users to run commands as root using sudo.
+

@@ -57,13 +57,13 @@ Tasks:
 - Monitor via loop
 - Kill if still running
 - Script runs for exactly 600 seconds
-#!/bin/bash
-# monitor_process.sh
+- !/bin/bash
+- monitor_process.sh
 sleep 600 &
 PID=$!
 echo "Started background process with PID: $PID"
 
-# Run the script for 10 minutes
+- Run the script for 10 minutes
 START_TIME=$(date +%s)
 END_TIME=$((START_TIME + 600))
 

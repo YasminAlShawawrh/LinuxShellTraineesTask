@@ -1,1 +1,37 @@
+# part 6: bash script and processes
+Write a shell script that will keep running for 10 mins in the background and check the process that it's
+created and try to kill using commands.
+
+vim monitor_process.sh                     # edit script 
+#!/bin/bash
+# monitor_process.sh
+sleep 600 &
+PID=$!
+echo "Started background process with PID: $PID"
+# Run the script for 10 minutes
+START_TIME=$(date +%s)
+END_TIME=$((START_TIME + 600))
+
+while [ $(date +%s) -lt $END_TIME ]; do
+    if ps -p $PID > /dev/null; then
+        echo "Process $PID is still running. Attempting to kill it..."
+        kill -9 $PID && echo "Process $PID killed."
+    else
+        echo "Process $PID has already exited."
+    fi
+    sleep 10  # prevent CPU spike
+done
+echo "10 minutes are over. Script finished."
+chmod +x monitor_process.sh                # make executable
+./monitor_process.sh                       #run the script
+
+notes:
+ps → check if process exists
+#!/bin/bash — run with Bash.
+sleep 600 & — spawn a 10-minute background process; PID=$! saves its PID.
+Compute END_TIME so the script itself runs for 600 seconds.
+while loop runs until END_TIME, checking the child each iteration.
+If child exists ps -p $PID, try kill -9 $PID and report; otherwise print it’s gone.
+sleep 10 prevents a tight CPU loop.
+After 10 minutes the loop exits and the script prints it’s finished.
 

@@ -14,7 +14,7 @@ useradd -G admin user3					# Create user3 and add it to the admin group
 passwd user2						# Set the password for user2 (you will type 'redhat')
 passwd user3						# Set the password for user3 (you will type 'redhat')
 usermod -aG wheel user3					# Add user3 to the wheel group to give root/sudo privileges
-su - user						# Switch to a different user (replace 'user' with the target username to verify)
+su - user3						# Switch to a different user (replace 'user' with the target username to verify)
 sudo whoami						# Test sudo privileges; should return 'root' if the user has root access
 
 notes:

@@ -202,5 +202,11 @@ curl http://localhost/sysstats/disk.html  # Test disk stats page
 curl http://localhost/sysstats/cpu.html  # Test CPU stats page
 curl http://localhost/sysstats/memory.html  # Test memory stats page
 
+notes:
 # Access the web page from browser using port forwarding in VirtualBox
 http://localhost:8080/sysstats/index.html  # Open in browser (host machine) via forwarded port
+/proc/stat → contains CPU statistics since system boot.
+usage = (user + system) * 100 / (user + system + idle)
+bc is used for floating-point arithmetic (bash alone can’t handle decimals).
+scale=2 → keeps 2 decimal places.
+

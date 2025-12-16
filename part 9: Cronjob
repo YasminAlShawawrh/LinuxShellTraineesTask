@@ -1,1 +1,40 @@
+# part 9: Cronjob
+Create a cronjob that will run at 1:30 AM every day and collect the users logged in and save them in a file
+Format : timestamp – users
+Note: the cronjob can run a script.
+
+vim /usr/local/bin/log_users.sh    	 # Open vim to create the script
+
+#!/bin/bash
+# /usr/local/bin/log_users.sh
+LOGFILE="/var/log/logged_users.log"
+DATE=/usr/bin/date
+WHO=/usr/bin/who
+TR=/usr/bin/tr
+CUT=/usr/bin/cut
+SORT=/usr/bin/sort
+UNIQ=/usr/bin/uniq
+SED=/usr/bin/sed
+TIMESTAMP=$($DATE "+%Y-%m-%d %H:%M:%S")
+# get first column from who (collapse spaces, cut field1), sort & uniq, join on one line
+USERS=$($WHO | $TR -s ' ' | $CUT -d' ' -f1 | $SORT | $UNIQ | $TR '\n' ' ')
+# remove trailing space if any
+USERS=$($SED -e 's/[[:space:]]*$//' <<< "$USERS")
+echo "$TIMESTAMP - $USERS" >> "$LOGFILE"
+
+chmod 0755 /usr/local/bin/log_users.sh   # Make the script executable
+vim /var/log/logged_users.log            # Open vim to create the log file (leave empty and save)
+chmod 0644 /var/log/logged_users.log     # Set permissions so root and others can read
+/usr/local/bin/log_users.sh              # Run the script manually to test
+crontab -e                               # Edit root's crontab Add the line: 30 1 * * * /usr/local/bin/log_users.sh
+crontab -l                               # List crontab to verify the cronjob is installed
+cat /var/log/logged_users.log
+
+notes:
+USERS=... → collect logged-in users:
+who → lists logged-in users
+tr -s ' ' → collapses multiple spaces
+cut -d' ' -f1 → selects first column (username)
+sort | uniq → removes duplicates and sorts alphabetically
+tr '\n' ' ' → puts all usernames on a single line
 

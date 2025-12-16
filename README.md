@@ -57,6 +57,28 @@ Tasks:
 - Monitor via loop
 - Kill if still running
 - Script runs for exactly 600 seconds
+#!/bin/bash
+# monitor_process.sh
+sleep 600 &
+PID=$!
+echo "Started background process with PID: $PID"
+
+# Run the script for 10 minutes
+START_TIME=$(date +%s)
+END_TIME=$((START_TIME + 600))
+
+while [ $(date +%s) -lt $END_TIME ]; do
+    if ps -p $PID > /dev/null; then
+        echo "Process $PID is still running. Attempting to kill it..."
+        kill -9 $PID && echo "Process $PID killed."
+    else
+        echo "Process $PID has already exited."
+    fi
+    sleep 10  # prevent CPU spike
+done
+
+echo "10 minutes are over. Script finished."
+
 
 Part 7 — Yum Repository
 Installed packages, created a local Zabbix repository, disabled external repos, and installed Zabbix components from the local repo.
@@ -66,7 +88,7 @@ Commands:
 - createrepo /var/www/html/zabbix
 - dnf config-manager --disable \*
 - dnf config-manager --enable local-zabbix
-- dnf install zabbix-server-mysql zabbix-web-mysql zabbix-agent --nogpgcheck -y
+- dnf install zabbix-server-mysql zabbix-web-mysql zabbix-agent
 - systemctl enable --now zabbix-server
 
 Part 8 — Network Management
@@ -81,6 +103,21 @@ Part 9 — Cron Job
 Created a script to log currently logged-in users and scheduled it via cron.
 Steps:
 - vim /usr/local/bin/log_users.sh
+#!/bin/bash
+# /usr/local/bin/log_users.sh
+LOGFILE="/var/log/logged_users.log"
+DATE=/usr/bin/date
+WHO=/usr/bin/who
+TR=/usr/bin/tr
+CUT=/usr/bin/cut
+SORT=/usr/bin/sort
+UNIQ=/usr/bin/uniq
+SED=/usr/bin/sed
+TIMESTAMP=$($DATE "+%Y-%m-%d %H:%M:%S")
+# get first column from who (collapse spaces, cut field1), sort & uniq, join on one line
+USERS=$($WHO | $TR -s ' ' | $CUT -d' ' -f1 | $SORT | $UNIQ | $TR '\n' ' ')
+# remove trailing space if any
+echo "$TIMESTAMP - $USERS" >> "$LOGFILE"
 - chmod 0755 /usr/local/bin/log_users.sh
 - touch /var/log/logged_users.log
 - chmod 0644 /var/log/logged_users.log

@@ -1,0 +1,229 @@
+1. SELinux Context Overview
+
+Every process and object (like files, sockets, etc.) in SELinux has a security context. The full context looks like this:
+
+user:role:type:level
+
+Field	Example		Meaning
+user	system_u	SELinux user (not Linux user)
+role	object_r	Role, usually for controlling access via roles
+type	httpd_t		Type/domain, main mechanism for enforcing permissions
+level	s0		MLS/MCS sensitivity level
+
+2. What is the “type”?
+
+The type is the most important part of SELinux access control. It represents either:
+File types for objects (like httpd_sys_content_t for web files)
+Process domains for subjects (like httpd_t for the Apache process)
+SELinux uses Type Enforcement (TE) to determine what a process can do:
+Process (subject) type: The type assigned to a running process.
+Object type: The type assigned to a file, directory, socket, etc.
+Access is allowed only if there’s a rule permitting the subject type to interact with the object type.
+######################################################################
+1. kill (without -9)
+By default, kill sends SIGTERM (signal 15) to a process.
+Purpose: Politely ask the process to terminate.
+Behavior:
+The process receives the signal and can:
+Clean up resources (temporary files, sockets, etc.)
+Save state
+Ignore the signal (if programmed to do so)
+Usage example:
+kill 1234
+Here, 1234 is the PID of the process.
+Key point: This is a graceful shutdown. The process gets a chance to exit cleanly.
+
+2. kill -9
+Sends SIGKILL (signal 9).
+Purpose: Forcefully kill a process.
+Behavior:
+Cannot be caught, blocked, or ignored by the process.
+Immediately terminates the process without cleanup.
+Usage example:
+kill -9 1234
+When to use:
+Process is stuck or unresponsive to SIGTERM.
+Avoids waiting for a clean shutdown.
+Key point: This is a forceful termination. It can lead to:
+Lost data if the process was writing files
+Resources (like memory or temporary files) not being freed properly
+######################################################################
+1. Where SELinux logs denied actions
+SELinux stores denied actions (AVC denials) mainly in:
+/var/log/audit/audit.log
+You can also check with:
+sudo ausearch -m avc -ts today
+or
+sudo journalctl | grep AVC
+2. If an action is denied, how to fix it (allow access)
+Step A – Temporary fix:
+Change the file type so the process is allowed to access it:
+sudo chcon -t <allowed_type> /path/to/file_or_folder
+Example: For Apache to write to a file:
+sudo chcon -t httpd_sys_rw_content_t /var/www/html/file.txt
+Step B – Permanent fix:
+Use semanage and restorecon to make it survive reboots:
+sudo semanage fcontext -a -t <allowed_type> "/path/to/file_or_folder(/.*)?"
+sudo restorecon -Rv /path/to/file_or_folder
+
+✅ Summary:
+Logs location: /var/log/audit/audit.log
+Fix denied access:
+Temporary → chcon
+Permanent → semanage + restorecon
+######################################################################
+How to use this repo
+Save this as /etc/yum.repos.d/local-zabbix.repo.
+
+1. [local-zabbix] – Repository ID
+This is the unique identifier for the repository.
+YUM/DNF uses this ID internally to refer to this repo.
+Rules:
+Must be unique among all repo files.
+No spaces allowed.
+Example usage:
+yum --disablerepo="*" --enablerepo="local-zabbix" install zabbix-server
+This tells YUM to only use this repository.
+2. name=Local Zabbix Repository – Human-readable name
+This is just a friendly name displayed when you list repositories:
+yum repolist
+Helps you identify the repo in output or logs.
+Can contain spaces.
+3. baseurl=http://localhost/zabbix/ – Location of packages
+This is the URL or path where YUM/DNF will look for RPM packages.
+Can be:
+HTTP/HTTPS (http://, https://)
+FTP (ftp://)
+Local filesystem (file:///path/to/repo)
+In your case:
+http://localhost/zabbix/ means your machine is hosting a local Zabbix repository via a web server (like Apache).
+YUM will fetch packages from there instead of the internet.
+4. enabled=1 – Whether the repo is active
+1 → the repo is enabled and will be considered during installs/updates.
+0 → the repo is disabled.
+Example: If you have multiple repos but only want to use Zabbix sometimes, you can set enabled=0 until needed.
+5. gpgcheck=0 – GPG signature check
+GPG (GNU Privacy Guard) is used to verify that RPM packages are signed and not tampered with.
+gpgcheck=1 → verify signatures. Recommended for security.
+gpgcheck=0 → skip verification.
+Often used for local repositories where you know the source is safe.
+Not recommended for public repos, because it bypasses security checks.
+######################################################################
+Task				iptables Command
+Open HTTP port 80		iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+Open HTTPS port 443		iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+Block SSH from 192.168.1.100	iptables -A INPUT -p tcp -s 192.168.1.100 --dport 22 -j REJECT
+Save rules permanently		iptables-save > /etc/iptables/rules.v4
+######################################################################
+1. What is a “rich rule”?
+Rich rules are a way in firewalld to define more detailed and flexible firewall rules than the basic --add-service or --add-port.
+They allow you to:
+Match source/destination IPs
+Specify ports and protocols
+Allow, reject, or drop traffic
+Log packets
+Example you mentioned:
+firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.1.100" port protocol="tcp" port="22" reject'
+2. What does family mean?
+The family specifies the IP protocol version the rule applies to:
+Value	Meaning
+ipv4	Apply the rule to IPv4 addresses only
+ipv6	Apply the rule to IPv6 addresses only
+inet	Apply to both IPv4 and IPv6
+So in your example:
+family="ipv4"
+means this rule only affects IPv4 traffic (like 192.168.1.100).
+3. Why is it important?
+Modern networks often have both IPv4 and IPv6.
+If you block only IPv4, an IPv6 address could bypass the rule.
+Choosing the correct family ensures your rule works on the intended traffic type.
+4. Example with both families
+# Block SSH for an IP in both IPv4 and IPv6
+firewall-cmd --permanent --add-rich-rule='rule family="inet" source address="192.168.1.100" port protocol="tcp" port="22" reject'
+inet → rule applies to both IPv4 and IPv6.
+
+✅ Summary:
+Rich rule: Advanced firewall rule in firewalld
+family: Specifies IP protocol version for the rule (ipv4, ipv6, or inet)
+Use case: Ensures rules apply only to the intended type of traffic
+######################################################################
+Summary of array basics in a Bash script:
+Declare: my_array=(item1 item2 item3)
+Access: ${my_array[0]} or all: ${my_array[@]}
+Add element: my_array+=(new_item)
+Length: ${#my_array[@]}
+Loop: for element in "${my_array[@]}"
+######################################################################
+LVM lets you create flexible storage using PV → VG → LV.
+Mount LV to a directory and format it.
+Permanent changes: Add LV to /etc/fstab using UUID.
+######################################################################
+Goal				Command / Method
+Only owner can access		chown user1:user1 /path && chmod 700 /path
+Give specific users access	setfacl -m u:user1:rwx /path
+Block specific user		setfacl -m u:user2:--- /path
+Check ACLs			getfacl /path
+
+Best Practice:
+Use standard permissions for simple cases (single owner).
+Use ACLs if multiple users need different access rights on the same folder.
+######################################################################
+SELinux is a mandatory access control (MAC) mechanism that enhances security by enforcing strict policies.
+It works through security contexts, which define who can access what.
+SELinux operates in three modes: Enforcing, Permissive, and Disabled.
+Policies define access and can be adjusted for specific processes, users, and files.
+Troubleshooting and allowing denials can be done using tools like audit2allow and semanage.
+######################################################################
+1. Open ports 80 (HTTP) and 443 (HTTPS) using port numbers
+# Open HTTP port 80
+sudo firewall-cmd --permanent --add-port=80/tcp
+# Open HTTPS port 443
+sudo firewall-cmd --permanent --add-port=443/tcp
+--permanent → Make the change persistent across reboots.
+/tcp → Protocol type (TCP).
+######################################################################
+1. What is cron?
+cron is a Linux utility that allows you to schedule tasks (commands or scripts) to run automatically at specified intervals.
+These tasks are called cron jobs.
+Typical uses:
+Running backups
+Updating system files
+Sending emails
+Running scripts periodically
+2. Cron file format
+Cron jobs are defined in crontab files. Each line in a crontab file has this format:
+* * * * * command_to_run
+- - - - -
+| | | | |
+| | | | +----- Day of the week (0-7) (Sunday=0 or 7)
+| | | +------- Month (1-12)
+| | +--------- Day of the month (1-31)
+| +----------- Hour (0-23)
++------------- Minute (0-59)
+Example:
+30 2 * * 1 /home/user/backup.sh
+Runs /home/user/backup.sh every Monday at 2:30 AM.
+3. Run a job every 15 minutes
+You can schedule a job to run every 15 minutes using:
+*/15 * * * * /path/to/your/script.sh
+Explanation:
+*/15 → Every 15 minutes (0, 15, 30, 45)
+* (Hour) → Every hour
+* (Day of month) → Every day
+* (Month) → Every month
+* (Day of week) → Every day of the week
+4. How to edit your crontab
+Open crontab for your user:
+crontab -e
+Add the cron job:
+
+*/15 * * * * /home/user/myscript.sh
+Save and exit. Cron will automatically pick up the new job.
+5. View your cron jobs
+crontab -l
+################################################################################
+Summary
+MariaDB = relational database management system, similar to MySQL.
+Why use it: store, retrieve, and manage structured data reliably and efficiently.
+Use cases: websites, business applications, data analysis, and anything that needs a database backend.
+################################################################################

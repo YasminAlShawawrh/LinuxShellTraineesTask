@@ -226,4 +226,6 @@ Summary
 MariaDB = relational database management system, similar to MySQL.
 Why use it: store, retrieve, and manage structured data reliably and efficiently.
 Use cases: websites, business applications, data analysis, and anything that needs a database backend.
+
 ################################################################################
+want any device on your LAN to access the VM’s sysstats page directly using the VM’s IP, not the host’s IP.
